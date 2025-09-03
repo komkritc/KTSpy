@@ -1,6 +1,7 @@
 # KTSpy
 # 📉 KTFIXPLUS-A Sell-Signal Sniper  
 > Intelligent, volume-confirmed Bollinger + RSI alerts for Thai mutual-fund traders
+> ![Project Screenshot](https://github.com/komkritc/KTSpy/blob/main/images/mainscreen.jpg)
 
 ---
 
