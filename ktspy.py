@@ -45,7 +45,8 @@ class PriceAnalyzer:
 
         for attempt in range(3):
             try:
-                response = requests.get(self.base_url, params=params, headers=headers, timeout=10)
+                response = requests.get(
+                    self.base_url, params=params, headers=headers, timeout=10)
                 response.raise_for_status()
                 data = response.json()
                 if data.get('s') != 'ok':
@@ -59,7 +60,7 @@ class PriceAnalyzer:
                 df.set_index('datetime', inplace=True)
                 return df
             except Exception as e:
-                print(f"⚠️ Fetch attempt {attempt + 1} failed: {e}")
+                print(f"⚠️ Fetch attempt {attempt+1} failed: {e}")
                 time.sleep(2 ** attempt)
         return None
 
@@ -68,8 +69,8 @@ class PriceAnalyzer:
         gain = delta.clip(lower=0)
         loss = -delta.clip(upper=0)
 
-        avg_gain = gain.ewm(alpha=1 / period, min_periods=period).mean()
-        avg_loss = loss.ewm(alpha=1 / period, min_periods=period).mean()
+        avg_gain = gain.ewm(alpha=1/period, min_periods=period).mean()
+        avg_loss = loss.ewm(alpha=1/period, min_periods=period).mean()
 
         rs = avg_gain / avg_loss
         rsi = 100 - (100 / (1 + rs))
@@ -124,7 +125,7 @@ class PriceAnalyzer:
         }
 
     def calculate_percentage_differences(self, df):
-        """Calculate percentage differences between current price and prices from 7, 14, 30 days ago"""
+        """Calculate percentage differences between current price and prices from 1, 3, 5, 7, 14, 30 days ago"""
         if len(df) < 30:
             return None
 
@@ -142,29 +143,68 @@ class PriceAnalyzer:
             return all_dates[mask][-1]
 
         # Calculate target dates
+        date_1d = current_date - timedelta(days=1)
+        date_3d = current_date - timedelta(days=3)
+        date_5d = current_date - timedelta(days=5)
         date_7d = current_date - timedelta(days=7)
         date_14d = current_date - timedelta(days=14)
         date_30d = current_date - timedelta(days=30)
 
         # Find closest dates in the data
+        closest_1d = find_closest_date(date_1d)
+        closest_3d = find_closest_date(date_3d)
+        closest_5d = find_closest_date(date_5d)
         closest_7d = find_closest_date(date_7d)
         closest_14d = find_closest_date(date_14d)
         closest_30d = find_closest_date(date_30d)
 
         # Get prices at these dates
-        price_7d = df.loc[closest_7d, 'close'] if closest_7d is not None else None
-        price_14d = df.loc[closest_14d, 'close'] if closest_14d is not None else None
-        price_30d = df.loc[closest_30d, 'close'] if closest_30d is not None else None
+        price_1d = df.loc[closest_1d,
+                          'close'] if closest_1d is not None else None
+        price_3d = df.loc[closest_3d,
+                          'close'] if closest_3d is not None else None
+        price_5d = df.loc[closest_5d,
+                          'close'] if closest_5d is not None else None
+        price_7d = df.loc[closest_7d,
+                          'close'] if closest_7d is not None else None
+        price_14d = df.loc[closest_14d,
+                           'close'] if closest_14d is not None else None
+        price_30d = df.loc[closest_30d,
+                           'close'] if closest_30d is not None else None
 
         # Calculate percentage differences
-        pct_diff_7d = ((current_price - price_7d) / price_7d * 100) if price_7d is not None else None
-        pct_diff_14d = ((current_price - price_14d) / price_14d * 100) if price_14d is not None else None
-        pct_diff_30d = ((current_price - price_30d) / price_30d * 100) if price_30d is not None else None
+        pct_diff_1d = ((current_price - price_1d) / price_1d *
+                       100) if price_1d is not None else None
+        pct_diff_3d = ((current_price - price_3d) / price_3d *
+                       100) if price_3d is not None else None
+        pct_diff_5d = ((current_price - price_5d) / price_5d *
+                       100) if price_5d is not None else None
+        pct_diff_7d = ((current_price - price_7d) / price_7d *
+                       100) if price_7d is not None else None
+        pct_diff_14d = ((current_price - price_14d) /
+                        price_14d * 100) if price_14d is not None else None
+        pct_diff_30d = ((current_price - price_30d) /
+                        price_30d * 100) if price_30d is not None else None
 
         # Create result dictionary
         result = {
             'current_date': current_date,
             'current_price': current_price,
+            '1_day': {
+                'date': closest_1d,
+                'price': price_1d,
+                'pct_change': pct_diff_1d
+            },
+            '3_days': {
+                'date': closest_3d,
+                'price': price_3d,
+                'pct_change': pct_diff_3d
+            },
+            '5_days': {
+                'date': closest_5d,
+                'price': price_5d,
+                'pct_change': pct_diff_5d
+            },
             '7_days': {
                 'date': closest_7d,
                 'price': price_7d,
@@ -192,12 +232,34 @@ class PriceAnalyzer:
 
         print("\nPERCENTAGE DIFFERENCE ANALYSIS")
         print(f"Symbol: {self.symbol}")
-        print(f"Current Price ({pct_diffs['current_date'].strftime('%Y-%m-%d')}): {pct_diffs['current_price']:.4f} THB")
+        print(
+            f"Current Price ({pct_diffs['current_date'].strftime('%Y-%m-%d')}): {pct_diffs['current_price']:.4f} THB")
         print()
 
         # Print header
         print(f"{'Period':<8} {'Date':<12} {'Price':<10} {'Change':<10}")
-        print("-" * 40)
+        print("-" * 45)
+
+        # 1 day row
+        if pct_diffs['1_day']['date'] is not None:
+            change_1d = pct_diffs['1_day']['pct_change']
+            trend_1d = "↑" if change_1d > 0 else "↓" if change_1d < 0 else "→"
+            print(
+                f"{'1 Day':<8} {pct_diffs['1_day']['date'].strftime('%Y-%m-%d'):<12} {pct_diffs['1_day']['price']:>9.4f} {change_1d:>+9.2f}% {trend_1d}")
+
+        # 3 days row
+        if pct_diffs['3_days']['date'] is not None:
+            change_3d = pct_diffs['3_days']['pct_change']
+            trend_3d = "↑" if change_3d > 0 else "↓" if change_3d < 0 else "→"
+            print(
+                f"{'3 Days':<8} {pct_diffs['3_days']['date'].strftime('%Y-%m-%d'):<12} {pct_diffs['3_days']['price']:>9.4f} {change_3d:>+9.2f}% {trend_3d}")
+
+        # 5 days row
+        if pct_diffs['5_days']['date'] is not None:
+            change_5d = pct_diffs['5_days']['pct_change']
+            trend_5d = "↑" if change_5d > 0 else "↓" if change_5d < 0 else "→"
+            print(
+                f"{'5 Days':<8} {pct_diffs['5_days']['date'].strftime('%Y-%m-%d'):<12} {pct_diffs['5_days']['price']:>9.4f} {change_5d:>+9.2f}% {trend_5d}")
 
         # 7 days row
         if pct_diffs['7_days']['date'] is not None:
@@ -228,7 +290,8 @@ class PriceAnalyzer:
         df = self.calculate_bollinger_bands(df)
         df['rsi'] = self.calculate_rsi(df, self.rsi_period)
         df['avg_volume'] = df['volume'].rolling(window=self.bb_period).mean()
-        df['volume_spike'] = df['volume'] > (df['avg_volume'] * self.volume_multiplier)
+        df['volume_spike'] = df['volume'] > (
+            df['avg_volume'] * self.volume_multiplier)
 
         # Check signals for each day
         signals = []
@@ -249,12 +312,16 @@ class PriceAnalyzer:
         }
 
     def plot_analysis(self, df, signals):
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(16, 12))
+        # fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(16, 12))
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 7), sharex=True)
 
         # Plot price and indicators
-        ax1.plot(df.index, df['close'], label='Close Price', color='blue', linewidth=2)
-        ax1.plot(df.index, df['sma'], label='SMA', color='orange', linewidth=1.5)
-        ax1.fill_between(df.index, df['bb_upper'], df['bb_lower'], color='gray', alpha=0.2, label='Bollinger Bands')
+        ax1.plot(df.index, df['close'],
+                 label='Close Price', color='blue', linewidth=2)
+        ax1.plot(df.index, df['sma'], label='SMA',
+                 color='orange', linewidth=1.5)
+        ax1.fill_between(df.index, df['bb_upper'], df['bb_lower'],
+                         color='gray', alpha=0.2, label='Bollinger Bands')
 
         # Highlight areas where price is above/below SMA
         ax1.fill_between(df.index, df['close'], df['sma'], where=df['close'] >= df['sma'],
@@ -262,7 +329,8 @@ class PriceAnalyzer:
         ax1.fill_between(df.index, df['close'], df['sma'], where=df['close'] < df['sma'],
                          color='red', alpha=0.1, label='Price < SMA (Sell Zone)')
 
-        ax1.set_title(f'{self.symbol} - Price and SMA with Buy/Sell Signals', fontsize=16, fontweight='bold')
+        ax1.set_title(f'{self.symbol} - Price and SMA with Buy/Sell Signals',
+                      fontsize=16, fontweight='bold')
         ax1.set_ylabel('Price (THB)')
         ax1.legend()
         ax1.grid(True, alpha=0.3)
@@ -281,21 +349,26 @@ class PriceAnalyzer:
                 ax1.annotate('BUY', xy=(date, price), xytext=(date, price * 1.02),
                              ha='center', va='bottom', fontsize=14, fontweight='bold',
                              color='green',
-                             arrowprops=dict(arrowstyle='->', color='green', lw=2),
+                             arrowprops=dict(arrowstyle='->',
+                                             color='green', lw=2),
                              bbox=dict(boxstyle="round,pad=0.5", facecolor="lightgreen", edgecolor="green", alpha=0.9))
 
             elif signal_type == 'SELL':
                 ax1.annotate('SELL', xy=(date, price), xytext=(date, price * 0.98),
                              ha='center', va='top', fontsize=14, fontweight='bold',
                              color='red',
-                             arrowprops=dict(arrowstyle='->', color='red', lw=2),
+                             arrowprops=dict(arrowstyle='->',
+                                             color='red', lw=2),
                              bbox=dict(boxstyle="round,pad=0.5", facecolor="lightcoral", edgecolor="red", alpha=0.9))
 
         # Plot RSI
         ax2.plot(df.index, df['rsi'], label='RSI', color='purple', linewidth=2)
-        ax2.axhline(y=self.rsi_overbought, color='red', linestyle='--', label='Overbought (70)')
-        ax2.axhline(y=50, color='gray', linestyle=':', alpha=0.7, label='Neutral (50)')
-        ax2.axhline(y=self.rsi_oversold, color='green', linestyle='--', label='Oversold (30)')
+        ax2.axhline(y=self.rsi_overbought, color='red',
+                    linestyle='--', label='Overbought (70)')
+        ax2.axhline(y=50, color='gray', linestyle=':',
+                    alpha=0.7, label='Neutral (50)')
+        ax2.axhline(y=self.rsi_oversold, color='green',
+                    linestyle='--', label='Oversold (30)')
         ax2.fill_between(df.index, self.rsi_overbought, df['rsi'], where=df['rsi'] >= self.rsi_overbought,
                          color='red', alpha=0.2)
         ax2.fill_between(df.index, self.rsi_oversold, df['rsi'], where=df['rsi'] <= self.rsi_oversold,
@@ -321,7 +394,8 @@ class PriceAnalyzer:
             return
 
         latest_signal = signals[-1]
-        print(f"\nCURRENT SIGNAL FOR {self.symbol} ({latest_signal['timestamp'].strftime('%Y-%m-%d')})")
+        print(
+            f"\nCURRENT SIGNAL FOR {self.symbol} ({latest_signal['timestamp'].strftime('%Y-%m-%d')})")
         print(latest_signal['message'])
         print(f"Current Price: {latest_signal['current_price']:.4f}")
         print(f"SMA: {latest_signal['sma']:.4f}")
@@ -334,7 +408,8 @@ class PriceAnalyzer:
         print(f"\nRECENT SIGNALS FOR {self.symbol} (Last {num_signals})")
 
         # Get the most recent signals
-        recent_signals = signals[-num_signals:] if len(signals) > num_signals else signals
+        recent_signals = signals[-num_signals:] if len(
+            signals) > num_signals else signals
 
         for signal in recent_signals:
             date_str = signal['timestamp'].strftime('%Y-%m-%d')
@@ -368,7 +443,7 @@ def main():
     analyzer.print_percentage_differences_table(results['pct_diffs'])
 
     # Print recent signals
-    #analyzer.print_recent_signals(results['signals'])
+    # analyzer.print_recent_signals(results['signals'])
 
     # Plot analysis
     analyzer.plot_analysis(results['data'], results['signals'])
