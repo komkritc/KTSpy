@@ -1,7 +1,7 @@
 # KTSpy
 # 📉 KTFIXPLUS-A Monitor 
 > Intelligent, volume-confirmed Bollinger + RSI alerts for Thai mutual-fund traders
-> ![Project Screenshot](https://github.com/komkritc/KTSpy/blob/main/images/ktspy1.jpg)
+> ![Project Screenshot](https://github.com/komkritc/KTSpy/blob/main/images/image1.jpg)
 
 ---
 
