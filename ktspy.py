@@ -11,7 +11,7 @@ plt.style.use('default')
 
 
 class PriceAnalyzer:
-    def __init__(self, symbol: str = "SCBGHC",
+    def __init__(self, symbol: str = "KTFIXPLUS-A",
                  bb_period: int = 20,
                  bb_std: float = 2.0,
                  rsi_period: int = 14,
