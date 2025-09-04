@@ -11,7 +11,7 @@ plt.style.use('default')
 
 
 class PriceAnalyzer:
-    def __init__(self, symbol: str = "KTFIXPLUS-A",
+    def __init__(self, symbol: str = "SCBGHC",
                  bb_period: int = 20,
                  bb_std: float = 2.0,
                  rsi_period: int = 14,
@@ -27,11 +27,17 @@ class PriceAnalyzer:
         self.volume_multiplier = volume_multiplier
         self.base_url = "https://www.finnomena.com/fn3/api/fund/v2/public/tv/history"
 
-    def get_timestamps(self, days_back: int = 100) -> tuple[int, int]:
-        yesterday = datetime.now() - timedelta(days=1)
-        from_date = yesterday - timedelta(days=days_back)
-        return int(from_date.timestamp()), int(yesterday.timestamp())
+    #def get_timestamps(self, days_back: int = 100) -> tuple[int, int]:
+    #    yesterday = datetime.now() - timedelta(days=1)
+    #    from_date = yesterday - timedelta(days=days_back)
+    #    return int(from_date.timestamp()), int(yesterday.timestamp())
 
+    def get_timestamps(self, days_back: int = 100) -> tuple[int, int]:
+        # Use today instead of yesterday
+        today = datetime.now()
+        from_date = today - timedelta(days=days_back)
+        return int(from_date.timestamp()), int(today.timestamp())
+    
     def fetch_price_data(self, days_back: int = 100) -> Optional[pd.DataFrame]:
         from_ts, to_ts = self.get_timestamps(days_back)
         params = {
